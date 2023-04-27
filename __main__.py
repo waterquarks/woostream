@@ -154,7 +154,7 @@ async def main():
 
     async with aiostream.stream.merge(
         fills(args.network, args.application_id, args.api_public_key, args.api_secret_key)
-    ).streamer() as streamer:
+    ).stream() as streamer:
         async for message in streamer:
             print(message)
 
