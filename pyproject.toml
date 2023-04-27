@@ -11,6 +11,7 @@ python = "^3.10"
 aiostream = "^0.4.5"
 aiohttp = "^3.8.4"
 websockets = "^11.0.2"
+python-telegram-bot = "^20.2"
 
 
 [build-system]

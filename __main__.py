@@ -3,10 +3,12 @@ import hashlib
 import hmac
 import json
 import logging
+import telegram
 import time
 import typing
 
 import aiohttp
+import aiostream
 import websockets
 import argparse
 
@@ -137,15 +139,24 @@ async def main():
         required=True
     )
 
-    args = parser.parse_args()
-
-    x = await position(
-        network='testnet',
-        api_public_key=args.api_public_key,
-        api_secret_key=args.api_secret_key
+    parser.add_argument(
+        '--telegram',
+        type=str
     )
 
-    print(x)
+    args = parser.parse_args()
+
+    print(await position(
+        network=args.network,
+        api_public_key=args.api_public_key,
+        api_secret_key=args.api_secret_key
+    ))
+
+    async with aiostream.stream.merge(
+        fills(args.network, args.application_id, args.api_public_key, args.api_secret_key)
+    ).streamer() as streamer:
+        async for message in streamer:
+            print(message)
 
 if __name__ == '__main__':
     asyncio.run(main())
