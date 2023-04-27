@@ -217,23 +217,27 @@ async def main():
 
         asyncio.ensure_future(broadcast("\n".join([
             f"Positions:",
-            *[
-                f"- {position['symbol']}: {position['holding']} @ {position['average_open_price']}"
-                for position in positions.get('positions', [])
-                if position['holding'] != 0
-            ],
+            *(
+                [
+                    f"- {position['symbol']}: {position['holding']} @ {position['average_open_price']}"
+                    for position in positions.get('positions', [])
+                    if position['holding'] != 0
+                ] or ["(None)"]
+            ),
             f"Balances:",
-            *[
-                f"- {asset}: {round(holding, str(meta['base_tick']).count('0')) if meta['base_tick'] < 1 else holding}"
-                for asset, holding, meta in [
-                    [asset, holding, [
-                        entry for entry in tokens['rows']
-                        if entry['symbol'] == f"SPOT_{asset}_USDT" or (asset == 'USDT' and entry['symbol'] == 'SPOT_USDC_USDT')
-                    ][0]]
-                    for asset, holding in balances.get('holding', {}).items()
-                ]
-                if holding > meta['base_tick']
-            ],
+            *(
+                [
+                    f"- {asset}: {round(holding, str(meta['base_tick']).count('0')) if meta['base_tick'] < 1 else holding}"
+                    for asset, holding, meta in [
+                        [asset, holding, [
+                            entry for entry in tokens['rows']
+                            if entry['symbol'] == f"SPOT_{asset}_USDT" or (asset == 'USDT' and entry['symbol'] == 'SPOT_USDC_USDT')
+                        ][0]]
+                        for asset, holding in balances.get('holding', {}).items()
+                    ]
+                    if holding > meta['base_tick']
+                ] or ["(None)"]
+            ),
         ])))
 
         async for topic, message in streamer:
