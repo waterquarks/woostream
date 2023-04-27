@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "woostream"
-version = "0.1.5"
+version = "0.1.6"
 description = "Listen to fills & position updates on Woo X"
 authors = ["waterquarks <waterquarks@gmail.com>"]
 license = "MIT"
