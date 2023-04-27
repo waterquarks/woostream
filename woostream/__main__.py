@@ -203,7 +203,7 @@ async def main():
         asyncio.ensure_future(broadcast("\n".join([
             f"Positions:",
             *[
-                f"- {position['symbol']}: {position['holding']} @ ${position['average_open_price']}"
+                f"- {position['symbol']}: {position['holding']} @ {position['average_open_price']}"
                 for position in positions.get('positions', [])
             ],
             f"Balances:",
@@ -220,7 +220,7 @@ async def main():
                 case 'executionreport':
                     if message['data']['status'] == 'FILLED':
                         asyncio.ensure_future(broadcast("\n".join([
-                            f"{'Bought' if message['data']['side'] == 'BUY' else 'Sold'} {message['data']['totalExecutedQuantity']} {message['data']['symbol']} @ ${message['data']['avgPrice']}"
+                            f"{'Bought' if message['data']['side'] == 'BUY' else 'Sold'} {message['data']['totalExecutedQuantity']} {message['data']['symbol']} @ {message['data']['avgPrice']}"
                         ])))
 
 if __name__ == '__main__':
