@@ -31,6 +31,8 @@ Learn how to get a `telegram-token` [here](https://core.telegram.org/bots/tutori
 
 You can get a `telegram-chat-id` by logging into [web.telegram.org/k](https://web.telegram.org/k), selecting a group chat you control and fetching the chat ID from the URL bar:
 
+<img width="438" alt="Screen Shot 2023-04-27 at 13 29 58" src="https://user-images.githubusercontent.com/28162761/234878545-41b2fd1d-eba4-4dcc-9c99-33e4508ba250.png">
+
 *Here the chat ID is -855125383.*
 
 Then replace the command-line arguments accordingly:
