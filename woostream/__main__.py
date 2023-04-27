@@ -51,6 +51,19 @@ def signature(timestamp: str, api_key_secret: str, **kwargs):
     )
 
 
+async def public_request(network: typing.Literal['mainnet', 'testnet'], endpoint: str):
+    async with aiohttp.ClientSession() as session:
+        response = await session.get(f"{ENDPOINTS[network]['HTTP']}{endpoint}")
+
+        try:
+            content = await response.json()
+
+            response.raise_for_status()
+
+            return content
+        except Exception as exception:
+            logging.error(content or exception)
+
 async def private_request(network: typing.Literal['mainnet', 'testnet'], api_public_key: str, api_secret_key: str, endpoint: str):
     timestamp = str(int(time.time() * 1000))
 
@@ -185,6 +198,8 @@ async def main():
                     chat_id=args.telegram_chat_id
                 )
 
+        symbols = await public_request(args.network, '/v1/public/info')
+
         positions, balances = await asyncio.gather(*[
             private_request(
                 network=args.network,
@@ -210,6 +225,10 @@ async def main():
             *[
                 f"- {asset}: {holding}"
                 for asset, holding in balances.get('holding', {}).items()
+                if holding > next(iter([
+                    entry['base_min'] for entry in symbols['rows']
+                    if entry['symbol'].split('_')[1] == asset
+                ]), 0)
             ],
         ])))
 
