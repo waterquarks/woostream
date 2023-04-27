@@ -111,12 +111,16 @@ async def private_stream(network: typing.Literal['mainnet', 'testnet'], applicat
 
 
 async def main():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog='woostream',
+        description='Stream fills & position updates from Woo X'
+    )
 
     parser.add_argument(
         '--network',
         choices=['mainnet', 'testnet'],
-        default='mainnet'
+        default='mainnet',
+        help='mainnet uses x.staging.woo.org, whilst testnet x.woo.org'
     )
 
     parser.add_argument(

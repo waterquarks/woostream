@@ -25,7 +25,13 @@ python -m woostream \
   --api-secret-key XTXL4TUAN6WLCPLXAIYNYTL2MPLP 
 ```
 
-It's possible to forward the output to a Telegram channel, by specifying `telegram-token` and `telegram-chat-id`.
+Learn how to get `application-id`, `api-public-key` and `api-secret-key` [here](https://support.woo.org/hc/en-001/articles/4410291152793--How-do-I-create-the-API-).
+
+`network` can be either `mainnet` or `testnet`; the former points to [x.woo.org](x.woo.org), whilst the latter to [x.staging.woo.org](x.staging.woo.org).
+
+### Telegram forwarding
+
+It's possible to output to a Telegram channel in addition to the shell, by specifying `telegram-token` and `telegram-chat-id`.
 
 Learn how to get a `telegram-token` [here](https://core.telegram.org/bots/tutorial#obtain-your-bot-token).
 
