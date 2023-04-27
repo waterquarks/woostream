@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "woostream"
+version = "0.1.0"
+description = "Listen to fills & position updates on Woo X"
+authors = ["waterquarks <waterquarks@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiostream = "^0.4.5"
+aiohttp = "^3.8.4"
+websockets = "^11.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
