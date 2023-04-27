@@ -198,7 +198,7 @@ async def main():
                     chat_id=args.telegram_chat_id
                 )
 
-        symbols = await public_request(args.network, '/v1/public/info')
+        tokens = await public_request(args.network, '/v1/public/info')
 
         positions, balances = await asyncio.gather(*[
             private_request(
@@ -220,15 +220,19 @@ async def main():
             *[
                 f"- {position['symbol']}: {position['holding']} @ {position['average_open_price']}"
                 for position in positions.get('positions', [])
+                if position['holding'] != 0
             ],
             f"Balances:",
             *[
-                f"- {asset}: {holding}"
-                for asset, holding in balances.get('holding', {}).items()
-                if holding > next(iter([
-                    entry['base_min'] for entry in symbols['rows']
-                    if entry['symbol'].split('_')[1] == asset
-                ]), 0)
+                f"- {asset}: {round(holding, str(meta['base_tick']).count('0')) if meta['base_tick'] < 1 else holding}"
+                for asset, holding, meta in [
+                    [asset, holding, [
+                        entry for entry in tokens['rows']
+                        if entry['symbol'] == f"SPOT_{asset}_USDT" or (asset == 'USDT' and entry['symbol'] == 'SPOT_USDC_USDT')
+                    ][0]]
+                    for asset, holding in balances.get('holding', {}).items()
+                ]
+                if holding > meta['base_tick']
             ],
         ])))
 
