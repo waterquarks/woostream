@@ -73,6 +73,42 @@ async def position(network: typing.Literal['mainnet', 'testnet'], api_public_key
             logging.error(content or exception)
 
 
+async def positions(network: typing.Literal['mainnet', 'testnet'], application_id: str, api_public_key: str, api_secret_key: str):
+    async for connection in websockets.connect(ENDPOINTS[network]['WS_PRIVATE'].format(application_id=application_id)):
+        try:
+            timestamp = str(int(time.time() * 1000))
+
+            await connection.send(json.dumps({
+                'id': 'test',
+                'event': 'auth',
+                'params': {
+                    'apikey': api_public_key,
+                    'sign': signature(timestamp, api_secret_key),
+                    'timestamp': timestamp
+                }
+            }))
+
+            await connection.send(json.dumps({
+                "id": "test",
+                "topic": "position",
+                "event": "subscribe"
+            }))
+
+            async def ping():
+                await connection.send(json.dumps({'event': 'ping'}))
+
+            async for raw_message in connection:
+                message = json.loads(raw_message)
+
+                if message.get('event') == 'ping': asyncio.ensure_future(ping())
+
+                if 'data' not in message:
+                    continue
+
+                yield message
+        except Exception as exception:
+            logging.error(exception)
+
 async def fills(network: typing.Literal['mainnet', 'testnet'], application_id: str, api_public_key: str, api_secret_key: str):
     async for connection in websockets.connect(ENDPOINTS[network]['WS_PRIVATE'].format(application_id=application_id)):
         try:
@@ -164,7 +200,8 @@ async def main():
 
     async with (
         aiostream.stream.merge(
-            fills(args.network, args.application_id, args.api_public_key, args.api_secret_key)
+            fills(args.network, args.application_id, args.api_public_key, args.api_secret_key),
+            positions(args.network, args.application_id, args.api_public_key, args.api_secret_key)
         ).stream() as streamer,
         telegram.Bot(args.telegram_token) if args.telegram_token else contextlib.nullcontext() as bot
     ):
