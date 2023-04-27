@@ -153,7 +153,8 @@ async def main():
         '--debug-level',
         type=str,
         required=True,
-        choices=list(logging._nameToLevel.keys())
+        choices=list(logging._nameToLevel.keys()),
+        default=logging._levelToName[logging.INFO]
     )
 
     args = parser.parse_args()
