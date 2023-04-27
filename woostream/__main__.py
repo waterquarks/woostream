@@ -13,6 +13,7 @@ import aiohttp
 import aiostream
 import telegram
 import websockets
+import secrets
 
 ENDPOINTS = {
     'mainnet': {
@@ -50,12 +51,12 @@ def signature(timestamp: str, api_key_secret: str, **kwargs):
     )
 
 
-async def position(network: typing.Literal['mainnet', 'testnet'], api_public_key: str, api_secret_key: str):
+async def private_request(network: typing.Literal['mainnet', 'testnet'], api_public_key: str, api_secret_key: str, endpoint: str):
     timestamp = str(int(time.time() * 1000))
 
     async with aiohttp.ClientSession() as session:
         response = await session.get(
-            f"{ENDPOINTS[network]['HTTP']}/v1/positions",
+            f"{ENDPOINTS[network]['HTTP']}{endpoint}",
             headers={
                 'x-api-key': api_public_key,
                 'x-api-signature': signature(timestamp, api_secret_key),
@@ -78,8 +79,10 @@ async def private_stream(network: typing.Literal['mainnet', 'testnet'], applicat
         try:
             timestamp = str(int(time.time() * 1000))
 
+            tag = secrets.token_urlsafe(8)
+
             await connection.send(json.dumps({
-                'id': 'test',
+                'id': tag,
                 'event': 'auth',
                 'params': {
                     'apikey': api_public_key,
@@ -89,7 +92,7 @@ async def private_stream(network: typing.Literal['mainnet', 'testnet'], applicat
             }))
 
             await connection.send(json.dumps({
-                "id": "test",
+                "id": tag,
                 "topic": topic,
                 "event": "subscribe"
             }))
@@ -105,7 +108,7 @@ async def private_stream(network: typing.Literal['mainnet', 'testnet'], applicat
                 if 'data' not in message:
                     continue
 
-                yield message
+                yield topic, message
         except Exception as exception:
             logging.error(exception)
 
@@ -154,7 +157,7 @@ async def main():
     )
 
     parser.add_argument(
-        '--debug-level',
+        '--log-level',
         type=str,
         choices=list(logging._nameToLevel.keys()),
         default=logging._levelToName[logging.INFO]
@@ -163,7 +166,7 @@ async def main():
     args = parser.parse_args()
 
     logging.basicConfig(
-        level=logging._nameToLevel[args.debug_level]
+        level=logging._nameToLevel[args.log_level]
     )
 
     async with (
@@ -174,7 +177,7 @@ async def main():
         telegram.Bot(args.telegram_token) if args.telegram_token else contextlib.nullcontext() as bot
     ):
         async def broadcast(message: str):
-            logging.info(message)
+            print(message)
 
             if bot:
                 await bot.send_message(
@@ -182,16 +185,43 @@ async def main():
                     chat_id=args.telegram_chat_id
                 )
 
-        asyncio.ensure_future(broadcast(
-            await position(
+        positions, balances = await asyncio.gather(*[
+            private_request(
                 network=args.network,
                 api_public_key=args.api_public_key,
-                api_secret_key=args.api_secret_key
-            )
-        ))
+                api_secret_key=args.api_secret_key,
+                endpoint='/v1/positions'
+            ),
+            private_request(
+                network=args.network,
+                api_public_key=args.api_public_key,
+                api_secret_key=args.api_secret_key,
+                endpoint='/v1/client/holding'
+            ),
+        ])
 
-        async for message in streamer:
-            asyncio.ensure_future(broadcast(message))
+        asyncio.ensure_future(broadcast("\n".join([
+            f"Positions:",
+            *[
+                f"- {position['symbol']}: {position['holding']} @ ${position['average_open_price']}"
+                for position in positions.get('positions', [])
+            ],
+            f"Balances:",
+            *[
+                f"- {asset}: {holding}"
+                for asset, holding in balances.get('holding', {}).items()
+            ],
+        ])))
+
+        async for topic, message in streamer:
+            match topic:
+                case 'position':
+                    pass
+                case 'executionreport':
+                    if message['data']['status'] == 'FILLED':
+                        asyncio.ensure_future(broadcast("\n".join([
+                            f"{'Bought' if message['data']['side'] == 'BUY' else 'Sold'} {message['data']['totalExecutedQuantity']} {message['data']['symbol']} @ ${message['data']['avgPrice']}"
+                        ])))
 
 if __name__ == '__main__':
     asyncio.run(main())
