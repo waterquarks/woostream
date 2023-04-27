@@ -76,7 +76,7 @@ async def position(network: typing.Literal['mainnet', 'testnet'], api_public_key
 
 
 async def fills(network: typing.Literal['mainnet', 'testnet'], application_id: str, api_public_key: str, api_secret_key: str):
-    async for connection in websockets.connect(ENDPOINTS[network]['WS_PUBLIC'].format(application_id=application_id)):
+    async for connection in websockets.connect(ENDPOINTS[network]['WS_PRIVATE'].format(application_id=application_id)):
         try:
             timestamp = str(int(time.time() * 1000))
 
