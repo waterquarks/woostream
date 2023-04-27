@@ -1,20 +1,18 @@
+import argparse
 import asyncio
+import contextlib
 import hashlib
 import hmac
 import json
 import logging
-import telegram
+import sys
 import time
 import typing
 
 import aiohttp
 import aiostream
+import telegram
 import websockets
-import argparse
-
-logging.basicConfig(
-    level=logging.INFO
-)
 
 ENDPOINTS = {
     'mainnet': {
@@ -140,23 +138,55 @@ async def main():
     )
 
     parser.add_argument(
-        '--telegram',
-        type=str
+        '--telegram-token',
+        type=str,
+        required='--telegram-chat-id' in sys.argv
+    )
+
+    parser.add_argument(
+        '--telegram-chat-id',
+        type=str,
+        required='--telegram-token' in sys.argv
+    )
+
+    parser.add_argument(
+        '--debug-level',
+        type=str,
+        required=True,
+        choices=list(logging._nameToLevel.keys())
     )
 
     args = parser.parse_args()
 
-    print(await position(
-        network=args.network,
-        api_public_key=args.api_public_key,
-        api_secret_key=args.api_secret_key
-    ))
+    logging.basicConfig(
+        level=logging._nameToLevel[args.debug_level]
+    )
 
-    async with aiostream.stream.merge(
-        fills(args.network, args.application_id, args.api_public_key, args.api_secret_key)
-    ).stream() as streamer:
+    async with (
+        aiostream.stream.merge(
+            fills(args.network, args.application_id, args.api_public_key, args.api_secret_key)
+        ).stream() as streamer,
+        telegram.Bot(args.telegram_token) if args.telegram_token else contextlib.nullcontext() as bot
+    ):
+        async def broadcast(message: str):
+            logging.info(message)
+
+            if bot:
+                await bot.send_message(
+                    text=message,
+                    chat_id=args.telegram_chat_id
+                )
+
+        asyncio.ensure_future(broadcast(
+            await position(
+                network=args.network,
+                api_public_key=args.api_public_key,
+                api_secret_key=args.api_secret_key
+            )
+        ))
+
         async for message in streamer:
-            print(message)
+            asyncio.ensure_future(broadcast(message))
 
 if __name__ == '__main__':
     asyncio.run(main())
